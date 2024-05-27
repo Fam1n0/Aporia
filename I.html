@@ -11,8 +11,8 @@
         .controls button {font-size: 16px;padding: 10px;margin: 0 5px;border: none;border-radius: 5px;outline: none;background-color: #ff0000;color: #fff;cursor: pointer;transition: background-color 0.3s ease;}
         .controls button:hover {background-color: #ff5555;}
         canvas {border: 2px solid #ffcc00;border-radius: 10px;box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);}
-        .time-list {margin-top: 20px;color: #ffcc00;}
-        .time-list li {margin-bottom: 5px;}
+        .info {margin-top: 20px;color: #ffcc00;}
+        .info p {margin: 5px 0;}
     </style>
 </head>
 <body>
@@ -21,7 +21,7 @@
         <button id="rotas-button">Rotas</button>
     </div>
     <canvas id="canvas" width="600" height="600"></canvas>
-    <ul class="time-list" id="time-list"></ul>
+    <div class="info" id="info"></div>
     <script>
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
@@ -35,7 +35,9 @@
         let current = [];
         let previous = [];
         const waves = [];
-        const timeList = document.getElementById('time-list');
+        const bounceCount = { top: 0, right: 0, bottom: 0, left: 0 };
+        let totalBounces = 0;
+        const info = document.getElementById('info');
 
         let startTime = null;
 
@@ -63,12 +65,20 @@
                 }
             }
 
+            // Track bounces off the sides
+            for (let i = 1; i < width - 1; i++) {
+                if (Math.abs(current[i][1]) > 1) bounceCount.top++;
+                if (Math.abs(current[i][height - 2]) > 1) bounceCount.bottom++;
+            }
+            for (let j = 1; j < height - 1; j++) {
+                if (Math.abs(current[1][j]) > 1) bounceCount.left++;
+                if (Math.abs(current[width - 2][j]) > 1) bounceCount.right++;
+            }
+
             // Check if waves have ceased
             if (maxAmplitude < 1 && startTime) {
                 const elapsedTime = (Date.now() - startTime) / 1000;
-                const listItem = document.createElement('li');
-                listItem.textContent = `Waves ceased after: ${elapsedTime.toFixed(2)} seconds`;
-                timeList.appendChild(listItem);
+                displayInfo(elapsedTime);
                 startTime = null;
             }
 
@@ -138,12 +148,29 @@
             return [r, g, b];
         }
 
+        function displayInfo(elapsedTime) {
+            info.innerHTML = `
+                <p>Total elapsed time: ${elapsedTime.toFixed(2)} seconds</p>
+                <p>Total bounces:</p>
+                <p>Top: ${bounceCount.top}</p>
+                <p>Right: ${bounceCount.right}</p>
+                <p>Bottom: ${bounceCount.bottom}</p>
+                <p>Left: ${bounceCount.left}</p>
+            `;
+        }
+
         document.getElementById('rotas-button').addEventListener('click', () => {
             const cx = Math.floor(width / 2);
             const cy = Math.floor(height / 2);
             previous[cx][cy] = rippleStrength;
             waves.push({ x: cx, y: cy, color: waveColor1, radius: 50, sides: sides });
             startTime = Date.now();  // Start the timer
+            // Reset bounce counts
+            bounceCount.top = 0;
+            bounceCount.right = 0;
+            bounceCount.bottom = 0;
+            bounceCount.left = 0;
+            info.innerHTML = '';  // Clear previous info
         });
 
         animate();
